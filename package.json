@@ -26,8 +26,12 @@
     "@angular/forms": "^20.0.0",
     "@angular/platform-browser": "^20.0.0",
     "@angular/router": "^20.0.0",
+    "@coinbase/wallet-sdk": "^4.3.4",
+    "@walletconnect/web3-provider": "^1.8.0",
+    "ethers": "^6.14.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
+    "web3modal": "^1.9.12",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
