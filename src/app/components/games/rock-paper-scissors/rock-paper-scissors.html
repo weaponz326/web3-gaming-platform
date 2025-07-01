@@ -1,0 +1,31 @@
+<div class="p-6 max-w-md mx-auto bg-white rounded shadow">
+    <h2 class="text-2xl font-bold mb-4">Rock Paper Scissors</h2>
+    <div *ngIf="gameState === 'initial'">
+      <label class="block mb-2">Wager Amount ($IACS):</label>
+      <input type="number" [(ngModel)]="wager" class="w-full p-2 border rounded mb-4" />
+      <label class="block mb-2">Your Move:</label>
+      <select [(ngModel)]="move" class="w-full p-2 border rounded mb-4">
+        <option value="0">Rock</option>
+        <option value="1">Paper</option>
+        <option value="2">Scissors</option>
+      </select>
+      <button (click)="commitMove()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+        Commit Move
+      </button>
+    </div>
+    <div *ngIf="gameState === 'committed'">
+      <p>Move committed! Waiting for opponent...</p>
+      <button (click)="revealMove()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4">
+        Reveal Move
+      </button>
+    </div>
+    <div *ngIf="gameState === 'revealed'">
+      <p>Move revealed! Resolving match...</p>
+      <button (click)="resolveMatch()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4">
+        Resolve Match
+      </button>
+    </div>
+    <div *ngIf="gameState === 'resolved'">
+      <p class="text-xl font-semibold">{{ result }}</p>
+    </div>
+</div>

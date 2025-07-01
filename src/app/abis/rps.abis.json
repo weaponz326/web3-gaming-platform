@@ -1,0 +1,29 @@
+[
+    {
+      "inputs": [
+        { "internalType": "uint256", "name": "_wager", "type": "uint256" },
+        { "internalType": "bytes32", "name": "_moveHash", "type": "bytes32" }
+      ],
+      "name": "commitMove",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "uint8", "name": "_move", "type": "uint8" },
+        { "internalType": "bytes32", "name": "_salt", "type": "bytes32" }
+      ],
+      "name": "revealMove",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "resolveMatch",
+      "outputs": [{ "internalType": "address", "name": "winner", "type": "address" }],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+]
