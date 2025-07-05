@@ -1,14 +1,75 @@
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <a routerLink="/rps" class="bg-white p-6 rounded shadow hover:shadow-lg transition">
-      <h2 class="text-xl font-semibold">Rock Paper Scissors</h2>
-      <p>Fast-paced, wager per round.</p>
-    </a>
-    <a routerLink="/tic-tac-toe" class="bg-white p-6 rounded shadow hover:shadow-lg transition">
-      <h2 class="text-xl font-semibold">Tic Tac Toe</h2>
-      <p>Turn-based, strategic fun.</p>
-    </a>
-    <a routerLink="/battleship" class="bg-white p-6 rounded shadow hover:shadow-lg transition">
-      <h2 class="text-xl font-semibold">Battleship</h2>
-      <p>Complex strategy, wager per match.</p>
-    </a>
+<div class="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Select a Game</h2>
+
+    <!-- Game Selection -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <button (click)="selectGame('rps')" [ngClass]="{'bg-blue-500 text-white': selectedGame === 'rps', 'bg-gray-200': selectedGame !== 'rps'}" class="p-6 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+        <h3 class="text-xl font-semibold">Rock Paper Scissors</h3>
+        <p>Fast-paced, wager-based fun.</p>
+      </button>
+      <button (click)="selectGame('ttt')" [ngClass]="{'bg-blue-500 text-white': selectedGame === 'ttt', 'bg-gray-200': selectedGame !== 'ttt'}" class="p-6 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+        <h3 class="text-xl font-semibold">Tic Tac Toe</h3>
+        <p>Coming soon!</p>
+      </button>
+      <button (click)="selectGame('bs')" [ngClass]="{'bg-blue-500 text-white': selectedGame === 'bs', 'bg-gray-200': selectedGame !== 'bs'}" class="p-6 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+        <h3 class="text-xl font-semibold">Battleship</h3>
+        <p>Coming soon!</p>
+      </button>
+    </div>
+
+    <!-- Game Options for RPS -->
+    <div *ngIf="selectedGame === 'rps'" class="space-y-6">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Game Options</h3>
+        <div class="flex justify-center space-x-4 mb-4">
+          <label class="flex items-center">
+            <input type="radio" [(ngModel)]="isAI" [value]="true" class="mr-2" (change)="selectGame('rps')" />
+            <span class="text-gray-700">Play vs AI</span>
+          </label>
+          <label class="flex items-center">
+            <input type="radio" [(ngModel)]="isAI" [value]="false" class="mr-2" (change)="selectGame('rps')" />
+            <span class="text-gray-700">Play vs Player</span>
+          </label>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 mb-1">Total Wager ($IACS)</label>
+          <input type="number" [(ngModel)]="totalWager" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter total wager" />
+        </div>
+      </div>
+
+      <!-- Create Game -->
+      <div *ngIf="!isAI && !joinGameCode">
+        <!-- <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400"> -->
+        <button (click)="createGame()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+          Create Game
+        </button>
+        <p *ngIf="inviteLink" class="mt-4 text-green-600 break-all text-center">
+          Share this game code: <span class="font-bold">{{ gameCode }}</span><br />
+          Link: <a [href]="inviteLink" class="underline">{{ inviteLink }}</a>
+        </p>
+      </div>
+
+      <!-- Join Game -->
+      <div *ngIf="!isAI">
+        <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Join a Game</h3>
+        <input type="text" [(ngModel)]="joinGameCode" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Enter game code" />
+        <!-- <button (click)="joinGame()" [disabled]="!account || !joinGameCode || totalWager <= 0" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 transition disabled:bg-gray-400"> -->
+        <button (click)="joinGame()" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 transition disabled:bg-gray-400">
+          Join Game
+        </button>
+      </div>
+
+      <!-- AI Game -->
+      <div *ngIf="isAI">
+        <!-- <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400"> -->
+        <button (click)="createGame()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+          Start AI Game
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <p *ngIf="error" class="text-red-500 text-center mt-4">{{ error }}</p>
+  </div>
 </div>

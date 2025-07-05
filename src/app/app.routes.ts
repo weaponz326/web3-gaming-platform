@@ -7,7 +7,7 @@ import { Battleship } from './components/games/battleship/battleship';
 export const routes: Routes = [
     { path: '', component: GameSelection },
     { path: 'rps', component: RockPaperScissors },
-    { path: 'tic-tac-toe', component: TicTacToe },
-    { path: 'battleship', component: Battleship },
+    { path: 'ttt', component: TicTacToe },
+    { path: 'bs', component: Battleship },
     { path: '**', redirectTo: '' },
 ];

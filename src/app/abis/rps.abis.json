@@ -1,29 +1,87 @@
 [
-    {
-      "inputs": [
-        { "internalType": "uint256", "name": "_wager", "type": "uint256" },
-        { "internalType": "bytes32", "name": "_moveHash", "type": "bytes32" }
-      ],
-      "name": "commitMove",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        { "internalType": "uint8", "name": "_move", "type": "uint8" },
-        { "internalType": "bytes32", "name": "_salt", "type": "bytes32" }
-      ],
-      "name": "revealMove",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "resolveMatch",
-      "outputs": [{ "internalType": "address", "name": "winner", "type": "address" }],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "_totalWager", "type": "uint256" },
+      { "internalType": "bool", "name": "_isAI", "type": "bool" }
+    ],
+    "name": "createGame",
+    "outputs": [{ "internalType": "bytes32", "name": "", "type": "bytes32" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_gameCode", "type": "bytes32" },
+      { "internalType": "uint256", "name": "_totalWager", "type": "uint256" },
+      { "internalType": "uint256", "name": "_wagerPerGame", "type": "uint256" }
+    ],
+    "name": "joinGame",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_gameCode", "type": "bytes32" },
+      { "internalType": "uint256", "name": "_wagerPerGame", "type": "uint256" }
+    ],
+    "name": "proposeWager",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_gameCode", "type": "bytes32" },
+      { "internalType": "bytes32", "name": "_moveHash", "type": "bytes32" }
+    ],
+    "name": "commitstagramMove",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_gameCode", "type": "bytes32" },
+      { "internalType": "uint8", "name": "_move", "type": "uint8" },
+      { "internalType": "bytes32", "name": "_salt", "type": "bytes32" }
+    ],
+    "name": "revealMove",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "_gameCode", "type": "bytes32" }
+    ],
+    "name": "quitGame",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "", "type": "bytes32" }
+    ],
+    "name": "games",
+    "outputs": [
+      { "internalType": "address", "WARNER": "player1", "type": "address" },
+      { "internalType": "address", "name": "player2", "type": "address" },
+      { "internalType": "uint256", "name": "totalWager", "type": "uint256" },
+      { "internalType": "uint256", "name": "wagerPerGame", "type": "uint256" },
+      { "internalType": "uint256", "name": "player1WagerProposal", "type": "uint256" },
+      { "internalType": "uint256", "name": "player2WagerProposal", "type": "uint256" },
+      { "internalType": "bytes32", "name": "player1MoveHash", "type": "bytes32" },
+      { "internalType": "bytes32", "name": "player2MoveHash", "type": "bytes32" },
+      { "internalType": "enum RockPaperScissors.Move", "name": "player1Move", "type": "uint8" },
+      { "internalType": "enum RockPaperScissors.Move", "name": "player2Move", "type": "uint8" },
+      { "internalType": "enum RockPaperScissors.GameState", "name": "state", "type": "uint8" },
+      { "internalType": "uint256", "name": "player1Balance", "type": "uint256" },
+      { "internalType": "uint256", "name": "player2Balance", "type": "uint256" },
+      { "internalType": "uint256", "name": "roundNumber", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
 ]

@@ -1,31 +1,87 @@
-<div class="p-6 max-w-md mx-auto bg-white rounded shadow">
-    <h2 class="text-2xl font-bold mb-4">Rock Paper Scissors</h2>
-    <div *ngIf="gameState === 'initial'">
-      <label class="block mb-2">Wager Amount ($IACS):</label>
-      <input type="number" [(ngModel)]="wager" class="w-full p-2 border rounded mb-4" />
-      <label class="block mb-2">Your Move:</label>
-      <select [(ngModel)]="move" class="w-full p-2 border rounded mb-4">
-        <option value="0">Rock</option>
-        <option value="1">Paper</option>
-        <option value="2">Scissors</option>
-      </select>
-      <button (click)="commitMove()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+<div class="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl p-8 max-w-lg w-full">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Rock Paper Scissors</h2>
+    <p class="text-center text-gray-700 mb-4">Game Code: {{ gameCode | slice:0:6 }}...{{ gameCode | slice:-4 }}</p>
+    <p class="text-center text-gray-700 mb-4">Round: {{ roundNumber }}</p>
+    <p class="text-center text-gray-700 mb-4">Your Balance: {{ player1Address === account ? player1Balance : player2Balance }} $IACS</p>
+    <p *ngIf="player2Address" class="text-center text-gray-700 mb-4">Opponent: {{ player2Address | slice:0:6 }}...{{ player2Address | slice:-4 }}</p>
+
+    <!-- Created State: Waiting for Player 2 -->
+    <div *ngIf="gameState === 'created'" class="text-center mb-6">
+      <p class="text-gray-700">Waiting for another player to join...</p>
+      <p class="text-gray-700 mt-2">Share this game code: <span class="font-bold">{{ gameCode }}</span></p>
+    </div>
+
+    <!-- Negotiating Wager -->
+    <div *ngIf="gameState === 'negotiating'" class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Negotiate Wager Per Game</h3>
+      <p class="text-center text-gray-700 mb-2">Player 1 Proposal: {{ player1Balance / 10 }} $IACS</p>
+      <p *ngIf="player2Address" class="text-center text-gray-700 mb-4">Player 2 Proposal: {{ player2Balance / 10 }} $IACS</p>
+      <div class="mb-4">
+        <label class="block text-gray-700 mb-1">Your Wager Proposal ($IACS)</label>
+        <input type="number" [(ngModel)]="wagerPerGame" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter wager per game" />
+      </div>
+      <button (click)="proposeWager()" [disabled]="!account || wagerPerGame <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+        Propose Wager
+      </button>
+    </div>
+
+    <!-- Committed State: Select Move -->
+    <div *ngIf="gameState === 'committed'" class="mb-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Choose Your Move</h3>
+      <div class="grid grid-cols-3 gap-4">
+        <button (click)="selectMove('1')" [ngClass]="{'bg-blue-500 text-white': move === '1', 'bg-gray-200': move !== '1'}" class="p-4 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+          <img src="assets/rock.png" alt="Rock" class="w-16 mx-auto" />
+          <span>Rock</span>
+        </button>
+        <button (click)="selectMove('2')" [ngClass]="{'bg-blue-500 text-white': move === '2', 'bg-gray-200': move !== '2'}" class="p-4 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+          <img src="assets/paper.png" alt="Paper" class="w-16 mx-auto" />
+          <span>Paper</span>
+        </button>
+        <button (click)="selectMove('3')" [ngClass]="{'bg-blue-500 text-white': move === '3', 'bg-gray-200': move !== '3'}" class="p-4 rounded-lg hover:bg-blue-400 transition transform hover:scale-105">
+          <img src="assets/scissors.png" alt="Scissors" class="w-16 mx-auto" />
+          <span>Scissors</span>
+        </button>
+      </div>
+      <p *ngIf="countdown > 0" class="text-center text-gray-700 mt-4">Time remaining: {{ countdown }} seconds</p>
+      <button (click)="commitMove()" [disabled]="!move || !account" class="mt-6 w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
         Commit Move
       </button>
     </div>
-    <div *ngIf="gameState === 'committed'">
-      <p>Move committed! Waiting for opponent...</p>
-      <button (click)="revealMove()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4">
+
+    <!-- Revealed State -->
+    <div *ngIf="gameState === 'revealed'" class="text-center mb-6">
+      <p class="text-gray-700">Move committed! Waiting to reveal...</p>
+      <button (click)="revealMove()" [disabled]="!account" class="mt-4 w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
         Reveal Move
       </button>
     </div>
-    <div *ngIf="gameState === 'revealed'">
-      <p>Move revealed! Resolving match...</p>
-      <button (click)="resolveMatch()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-4">
-        Resolve Match
+
+    <!-- Resolved State -->
+    <div *ngIf="gameState === 'resolved'" class="text-center mb-6">
+      <p class="text-2xl font-bold animate-pulse" [ngClass]="{'text-green-600': roundResult === 'You won!', 'text-red-600': roundResult !== 'You won!' && roundResult !== 'Tie!'}">{{ roundResult }}</p>
+      <p class="text-gray-700 mt-2">Player 1 Balance: {{ player1Balance }} $IACS</p>
+      <p class="text-gray-700">Player 2 Balance: {{ player2Balance }} $IACS</p>
+      <button (click)="commitMove()" [disabled]="!move || !account" class="mt-4 w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+        Play Next Round
+      </button>
+      <button (click)="quitGame()" class="mt-4 w-full bg-red-600 text-white p-3 rounded hover:bg-red-700 transition">
+        Quit Game
       </button>
     </div>
-    <div *ngIf="gameState === 'resolved'">
-      <p class="text-xl font-semibold">{{ result }}</p>
+
+    <!-- Ended State -->
+    <div *ngIf="gameState === 'ended'" class="text-center">
+      <p class="text-2xl font-bold text-gray-700">Game Over!</p>
+      <p class="text-gray-700 mt-2">Final Balances:</p>
+      <p class="text-gray-700">Player 1: {{ player1Balance }} $IACS</p>
+      <p *ngIf="player2Address" class="text-gray-700">Player 2: {{ player2Balance }} $IACS</p>
+      <button routerLink="/" class="mt-6 w-full bg-gray-600 text-white p-3 rounded hover:bg-gray-700 transition">
+        Back to Home
+      </button>
     </div>
+
+    <!-- Error Message -->
+    <p *ngIf="error" class="text-red-500 text-center mt-4">{{ error }}</p>
+  </div>
 </div>
