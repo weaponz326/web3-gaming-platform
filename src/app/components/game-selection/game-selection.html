@@ -18,8 +18,8 @@
       </button>
     </div>
 
-    <!-- Game Options for RPS -->
-    <div *ngIf="selectedGame === 'rps'" class="space-y-6">
+    <!-- Game Options -->
+    <div class="space-y-6">
       <div>
         <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Game Options</h3>
         <div class="flex justify-center space-x-4 mb-4">
@@ -33,37 +33,74 @@
           </label>
         </div>
         <div class="mb-4">
-          <label class="block text-gray-700 mb-1">Total Wager ($IACS)</label>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Total Wager ($IACS)</h3>
           <input type="number" [(ngModel)]="totalWager" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter total wager" />
         </div>
       </div>
 
       <!-- Create Game -->
       <div *ngIf="!isAI && !joinGameCode">
-        <!-- <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400"> -->
-        <button (click)="createGame()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+        <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Create Game</h3>
+        <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
           Create Game
         </button>
-        <p *ngIf="inviteLink" class="mt-4 text-green-600 break-all text-center">
-          Share this game code: <span class="font-bold">{{ gameCode }}</span><br />
-          Link: <a [href]="inviteLink" class="underline">{{ inviteLink }}</a>
-        </p>
+        
+        <!-- Game Code Display with Copy and Share buttons -->
+        <div class="mt-4 space-y-2">
+          <div class="input-group flex">
+            <input 
+              type="text" 
+              [value]="gameCode" 
+              class="flex-1 p-2 border border-gray-300 rounded-l bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              placeholder="Game code"
+              disabled 
+              readonly 
+            />
+            <button 
+              (click)="copyGameCode()" 
+              class="relative px-3 py-2 bg-gray-100 border-t border-b border-gray-300 hover:bg-gray-200 transition focus:outline-none focus:ring-2 focus:ring-blue-500 border-l-0"
+              title="Copy game code"
+            >
+              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              <div 
+                class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs transition-opacity duration-300 pointer-events-none z-10"
+                [class.opacity-100]="showCopyTooltip"
+                [class.opacity-0]="!showCopyTooltip"
+              >
+                Copied!
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-gray-800"></div>
+              </div>
+            </button>
+            <button 
+              (click)="shareGameCode()" 
+              class="px-3 py-2 bg-gray-100 border border-gray-300 rounded-r hover:bg-gray-200 transition focus:outline-none focus:ring-2 focus:ring-blue-500 border-l-0"
+              title="Share game code"
+            >
+              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+              </svg>
+            </button>
+          </div>
+          <p class="text-sm text-gray-600">
+            Share this code with another player to join your game.
+          </p>
+        </div>
       </div>
 
       <!-- Join Game -->
       <div *ngIf="!isAI">
         <h3 class="text-lg font-semibold text-gray-700 mb-2 text-center">Join a Game</h3>
         <input type="text" [(ngModel)]="joinGameCode" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Enter game code" />
-        <!-- <button (click)="joinGame()" [disabled]="!account || !joinGameCode || totalWager <= 0" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 transition disabled:bg-gray-400"> -->
-        <button (click)="joinGame()" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 transition disabled:bg-gray-400">
+        <button (click)="joinGame()" [disabled]="!account || !joinGameCode || totalWager <= 0" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700 transition disabled:bg-gray-400">
           Join Game
         </button>
       </div>
 
       <!-- AI Game -->
       <div *ngIf="isAI">
-        <!-- <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400"> -->
-        <button (click)="createGame()" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
+        <button (click)="createGame()" [disabled]="!account || totalWager <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">
           Start AI Game
         </button>
       </div>
@@ -71,5 +108,8 @@
 
     <!-- Error Message -->
     <p *ngIf="error" class="text-red-500 text-center mt-4">{{ error }}</p>
+    
+    <!-- Success Message -->
+    <p *ngIf="successMessage" class="text-green-500 text-center mt-4">{{ successMessage }}</p>
   </div>
 </div>

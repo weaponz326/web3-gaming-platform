@@ -18,7 +18,7 @@
       <p class="text-center text-gray-700 mb-2">Player 1 Proposal: {{ player1Balance / 10 }} $IACS</p>
       <p *ngIf="player2Address" class="text-center text-gray-700 mb-4">Player 2 Proposal: {{ player2Balance / 10 }} $IACS</p>
       <div class="mb-4">
-        <label class="block text-gray-700 mb-1">Your Wager Proposal ($IACS)</label>
+        <label class="block text-gray-700 mb-1">Your Wager Per Game Proposal ($IACS)</label>
         <input type="number" [(ngModel)]="wagerPerGame" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter wager per game" />
       </div>
       <button (click)="proposeWager()" [disabled]="!account || wagerPerGame <= 0" class="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition disabled:bg-gray-400">

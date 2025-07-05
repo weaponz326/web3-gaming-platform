@@ -42,6 +42,7 @@ export class RockPaperScissors {
     // Subscribe to account changes
     this.web3Service.account$.subscribe((account) => {
       this.account = account;
+      this.account = '1';
       this.fetchGameState(); // Refresh game state when account changes
     });
 
