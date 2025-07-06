@@ -14,12 +14,12 @@ import { interval } from 'rxjs';
   styleUrl: './rock-paper-scissors.scss'
 })
 export class RockPaperScissors {
- gameCode: string = '';
+  gameCode: string = '';
   player1Address: string = '';
   player2Address: string | null = null;
   totalWager: number = 0;
   wagerPerGame: number = 0;
-  move: string = '';
+  move: number = 0; // Changed to number to match contract enum
   salt: string = Math.random().toString(36).substring(2);
   gameState: string = 'created';
   roundResult: string = '';
@@ -29,20 +29,27 @@ export class RockPaperScissors {
   countdown: number = 30;
   timerSubscription: Subscription | any;
   error: string = '';
-  account: string | null = null; // Added account property
+  account: string | null = null;
   contractAddress = '0xYourContractAddress'; // Replace with actual Sepolia contract address
+
+  // Move enum mapping
+  moveNames: { [key: number]: string } = {
+    0: 'Rock',
+    1: 'Paper',
+    2: 'Scissors'
+  };
 
   constructor(
     private web3Service: Web3Service,
     private route: ActivatedRoute,
-    private router: Router // Added Router for navigation
+    private router: Router
   ) {}
 
   ngOnInit() {
     // Subscribe to account changes
     this.web3Service.account$.subscribe((account) => {
       this.account = account;
-      this.account = '1';
+      // Removed hardcoded account assignment
       this.fetchGameState(); // Refresh game state when account changes
     });
 
@@ -77,7 +84,11 @@ export class RockPaperScissors {
       this.player1Balance = Number(ethers.formatEther(game.player1Balance));
       this.player2Balance = Number(ethers.formatEther(game.player2Balance));
       this.roundNumber = Number(game.roundNumber);
-      this.gameState = ['created', 'negotiating', 'committed', 'revealed', 'resolved', 'ended'][Number(game.state)];
+      
+      // Updated to match actual game states
+      const gameStates = ['created', 'negotiating', 'committed', 'revealed', 'resolved', 'ended'];
+      this.gameState = gameStates[Number(game.state)] || 'unknown';
+      
       if (this.gameState === 'ended') {
         this.roundResult = 'Game ended!';
         this.timerSubscription?.unsubscribe();
@@ -126,7 +137,7 @@ export class RockPaperScissors {
   }
 
   async commitMove() {
-    if (!this.move) {
+    if (this.move === undefined || this.move === null) {
       this.error = 'Please select a move';
       return;
     }
@@ -138,9 +149,15 @@ export class RockPaperScissors {
     }
 
     const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
-    const moveHash = ethers.keccak256(ethers.concat([ethers.toUtf8Bytes(this.move), ethers.toUtf8Bytes(this.salt)]));
+    
+    // Fixed: Create hash with move as number and salt as bytes32
+    const moveBytes = ethers.zeroPadValue(ethers.toBeHex(this.move), 32);
+    const saltBytes = ethers.zeroPadValue(ethers.toUtf8Bytes(this.salt), 32);
+    const moveHash = ethers.keccak256(ethers.concat([moveBytes, saltBytes]));
+    
     try {
-      const tx = await contract['commitMove'](this.gameCode, moveHash);
+      // Fixed: Use correct function name from ABI
+      const tx = await contract['commitstagramMove'](this.gameCode, moveHash);
       await tx.wait();
       await this.fetchGameState();
       this.error = '';
@@ -159,7 +176,9 @@ export class RockPaperScissors {
 
     const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
     try {
-      const tx = await contract['revealMove'](this.gameCode, Number(this.move), ethers.toUtf8Bytes(this.salt));
+      // Fixed: Use consistent salt encoding
+      const saltBytes = ethers.zeroPadValue(ethers.toUtf8Bytes(this.salt), 32);
+      const tx = await contract['revealMove'](this.gameCode, this.move, saltBytes);
       await tx.wait();
       await this.fetchGameState();
       this.error = '';
@@ -189,9 +208,25 @@ export class RockPaperScissors {
     }
   }
 
-  selectMove(move: string) {
+  selectMove(move: number) {
     this.move = move;
     this.error = '';
   }
 
+  // Helper method to get move name for display
+  getMoveName(move: number): string {
+    return this.moveNames[move] || 'Unknown';
+  }
+
+  // Helper method to check if it's the current player's turn
+  isCurrentPlayer(): boolean {
+    return this.account === this.player1Address || this.account === this.player2Address;
+  }
+
+  // Helper method to get current player role
+  getCurrentPlayerRole(): string {
+    if (this.account === this.player1Address) return 'Player 1';
+    if (this.account === this.player2Address) return 'Player 2';
+    return 'Spectator';
+  }
 }
