@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 export class GameSelection {
   selectedGame: string = 'rps';
   totalWager: number = 0;
+  wagerPerGame: number = 0; // Added explicit wager per game
   isAI: boolean = false;
   gameCode: string = '';
   joinGameCode: string = '';
@@ -23,13 +24,29 @@ export class GameSelection {
   account: string | null = null;
   inviteLink: string = '';
   showCopyTooltip: boolean = false;
+  isCreatingGame: boolean = false;
+  isJoiningGame: boolean = false;
 
-  constructor(private web3Service: Web3Service, private router: Router) {}
+  // Contract address - should be moved to environment config
+  private contractAddress = '0xYourContractAddress'; // Replace with actual contract address
+
+  constructor(
+    private web3Service: Web3Service, 
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit() {
     this.web3Service.account$.subscribe((account) => {
       this.account = account;
-      this.account = '1';
+      // Removed hardcoded account assignment
+    });
+
+    // Check for game code in query params (for direct links)
+    this.route.queryParams.subscribe((params) => {
+      if (params['gameCode']) {
+        this.joinGameCode = params['gameCode'];
+      }
     });
   }
 
@@ -42,6 +59,14 @@ export class GameSelection {
       this.error = 'Total wager must be greater than 0';
       return;
     }
+    if (this.wagerPerGame <= 0) {
+      this.error = 'Wager per game must be greater than 0';
+      return;
+    }
+    if (this.wagerPerGame > this.totalWager) {
+      this.error = 'Wager per game cannot exceed total wager';
+      return;
+    }
 
     const signer = this.web3Service.getSigner();
     if (!signer) {
@@ -49,14 +74,39 @@ export class GameSelection {
       return;
     }
 
-    const contract = new ethers.Contract('0xYourContractAddress', rpsAbi, signer);
+    this.isCreatingGame = true;
+    this.error = '';
+
+    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
     try {
-      const tx = await contract['createGame'](ethers.parseEther(this.totalWager.toString()), this.isAI);
+      const tx = await contract['createGame'](
+        ethers.parseEther(this.totalWager.toString()), 
+        this.isAI
+      );
       const receipt = await tx.wait();
-      const gameCode = receipt.logs[0].topics[1]; // Extract gameCode from GameCreated event
+      
+      // Better event parsing - look for GameCreated event
+      let gameCode = '';
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = contract.interface.parseLog(log);
+          if (parsedLog && parsedLog.name === 'GameCreated') {
+            gameCode = parsedLog.args['gameCode'];
+            break;
+          }
+        } catch (e) {
+          // Skip logs that can't be parsed
+          continue;
+        }
+      }
+
+      // Fallback: if no event found, use transaction hash as game code
+      if (!gameCode) {
+        gameCode = receipt.hash;
+      }
+
       this.gameCode = gameCode;
       this.inviteLink = `${window.location.origin}/?gameCode=${gameCode}&game=rps`;
-      this.error = '';
       this.successMessage = 'Game created successfully! Share the code with another player.';
       
       // Clear success message after 5 seconds
@@ -64,9 +114,20 @@ export class GameSelection {
         this.successMessage = '';
       }, 5000);
       
-      this.router.navigate(['/rps'], { queryParams: { gameCode, player1: this.account } });
+      // Navigate to game with proper parameters
+      this.router.navigate(['/rps'], { 
+        queryParams: { 
+          gameCode, 
+          player1: this.account,
+          totalWager: this.totalWager,
+          wagerPerGame: this.wagerPerGame
+        } 
+      });
     } catch (error: any) {
       this.error = 'Failed to create game: ' + error.message;
+      console.error('Create game error:', error);
+    } finally {
+      this.isCreatingGame = false;
     }
   }
 
@@ -75,8 +136,16 @@ export class GameSelection {
       this.error = 'Please connect your wallet';
       return;
     }
-    if (!this.joinGameCode || this.totalWager <= 0) {
-      this.error = 'Invalid game code or wager';
+    if (!this.joinGameCode) {
+      this.error = 'Please enter a game code';
+      return;
+    }
+    if (this.totalWager <= 0) {
+      this.error = 'Total wager must be greater than 0';
+      return;
+    }
+    if (this.wagerPerGame <= 0) {
+      this.error = 'Wager per game must be greater than 0';
       return;
     }
 
@@ -86,14 +155,45 @@ export class GameSelection {
       return;
     }
 
-    const contract = new ethers.Contract('0xYourContractAddress', rpsAbi, signer);
+    this.isJoiningGame = true;
+    this.error = '';
+
+    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
     try {
-      const tx = await contract['joinGame'](this.joinGameCode, ethers.parseEther(this.totalWager.toString()), ethers.parseEther((this.totalWager / 10).toString()));
+      // First, check if the game exists and get its details
+      const gameDetails = await contract['games'](this.joinGameCode);
+      
+      if (gameDetails.player1 === ethers.ZeroAddress) {
+        this.error = 'Game not found or invalid game code';
+        return;
+      }
+
+      if (gameDetails.player2 !== ethers.ZeroAddress) {
+        this.error = 'Game already has two players';
+        return;
+      }
+
+      const tx = await contract['joinGame'](
+        this.joinGameCode, 
+        ethers.parseEther(this.totalWager.toString()), 
+        ethers.parseEther(this.wagerPerGame.toString())
+      );
       await tx.wait();
-      this.router.navigate(['/rps'], { queryParams: { gameCode: this.joinGameCode, player1: null, player2: this.account } });
-      this.error = '';
+      
+      this.router.navigate(['/rps'], { 
+        queryParams: { 
+          gameCode: this.joinGameCode, 
+          player1: gameDetails.player1,
+          player2: this.account,
+          totalWager: this.totalWager,
+          wagerPerGame: this.wagerPerGame
+        } 
+      });
     } catch (error: any) {
       this.error = 'Failed to join game: ' + error.message;
+      console.error('Join game error:', error);
+    } finally {
+      this.isJoiningGame = false;
     }
   }
 
@@ -110,6 +210,11 @@ export class GameSelection {
    * Copy game code to clipboard
    */
   async copyGameCode() {
+    if (!this.gameCode) {
+      this.error = 'No game code to copy';
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(this.gameCode);
       this.showCopyTooltip = true;
@@ -126,9 +231,36 @@ export class GameSelection {
   }
 
   /**
+   * Copy invite link to clipboard
+   */
+  async copyInviteLink() {
+    if (!this.inviteLink) {
+      this.error = 'No invite link to copy';
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(this.inviteLink);
+      this.successMessage = 'Invite link copied to clipboard!';
+      this.error = '';
+      
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 3000);
+    } catch (err) {
+      this.fallbackCopyTextToClipboard(this.inviteLink);
+    }
+  }
+
+  /**
    * Share game code using Web Share API or fallback to clipboard
    */
   async shareGameCode() {
+    if (!this.gameCode || !this.inviteLink) {
+      this.error = 'No game to share';
+      return;
+    }
+
     const shareData = {
       title: 'Join my Rock Paper Scissors game!',
       text: `Use game code: ${this.gameCode}`,
@@ -155,6 +287,27 @@ export class GameSelection {
       }, 3000);
     } catch (err) {
       this.error = 'Failed to share game code';
+      console.error('Share error:', err);
+    }
+  }
+
+  /**
+   * Validate wager inputs
+   */
+  validateWagers() {
+    if (this.wagerPerGame > this.totalWager) {
+      this.error = 'Wager per game cannot exceed total wager';
+    } else if (this.wagerPerGame > 0 && this.totalWager > 0) {
+      this.error = '';
+    }
+  }
+
+  /**
+   * Calculate suggested wager per game (10% of total)
+   */
+  calculateSuggestedWager() {
+    if (this.totalWager > 0) {
+      this.wagerPerGame = Math.round(this.totalWager * 0.1 * 100) / 100; // 10% rounded to 2 decimals
     }
   }
 
@@ -182,12 +335,41 @@ export class GameSelection {
           this.showCopyTooltip = false;
         }, 2000);
       } else {
-        this.error = 'Failed to copy game code';
+        this.error = 'Failed to copy to clipboard';
       }
     } catch (err) {
-      this.error = 'Failed to copy game code';
+      this.error = 'Failed to copy to clipboard';
     }
     
     document.body.removeChild(textArea);
+  }
+
+  /**
+   * Check if wallet is connected
+   */
+  get isWalletConnected(): boolean {
+    return !!this.account;
+  }
+
+  /**
+   * Check if form is valid for creating game
+   */
+  get canCreateGame(): boolean {
+    return this.isWalletConnected && 
+           this.totalWager > 0 && 
+           this.wagerPerGame > 0 && 
+           this.wagerPerGame <= this.totalWager &&
+           !this.isCreatingGame;
+  }
+
+  /**
+   * Check if form is valid for joining game
+   */
+  get canJoinGame(): boolean {
+    return this.isWalletConnected && 
+           this.joinGameCode.length > 0 && 
+           this.totalWager > 0 && 
+           this.wagerPerGame > 0 &&
+           !this.isJoiningGame;
   }
 }
