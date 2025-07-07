@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Web3Service } from '../../services/web3/web3';
 import { ethers } from 'ethers';
-import rpsAbi from '../../abis/rps.abis.json';
+import rpsAbiJson from '../../abis/rps.abis.json';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -23,6 +23,9 @@ export class GameSelection {
   account: string | null = null;
   inviteLink: string = '';
   showCopyTooltip: boolean = false;
+  // Extract only the ABI array
+  private rpsAbi = rpsAbiJson.abi;
+  private contractAddress = '0xYourContractAddress'; // Replace with actual Sepolia contract address
 
   constructor(private web3Service: Web3Service, private router: Router) {}
 
@@ -48,9 +51,12 @@ export class GameSelection {
       return;
     }
 
-    const contract = new ethers.Contract('0xYourContractAddress', rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
-      const tx = await contract['createGame'](ethers.parseEther(this.totalWager.toString()), this.isAI);
+      // Adjust the createGame call based on the ABI
+      const moveHash = ethers.keccak256(ethers.toUtf8Bytes(Math.random().toString(36).substring(2)));
+      const tx = await contract['createGame'](moveHash, { value: ethers.parseEther(this.totalWager.toString()) });
       const receipt = await tx.wait();
       const gameCode = receipt.logs[0].topics[1]; // Extract gameCode from GameCreated event
       this.gameCode = gameCode;
@@ -85,9 +91,11 @@ export class GameSelection {
       return;
     }
 
-    const contract = new ethers.Contract('0xYourContractAddress', rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
-      const tx = await contract['joinGame'](this.joinGameCode, ethers.parseEther(this.totalWager.toString()), ethers.parseEther((this.totalWager / 10).toString()));
+      // Adjust the joinGame call to match the ABI
+      const tx = await contract['joinGame'](this.joinGameCode, 0, { value: ethers.parseEther(this.totalWager.toString()) });
       await tx.wait();
       this.router.navigate(['/rps'], { queryParams: { gameCode: this.joinGameCode, player1: null, player2: this.account } });
       this.error = '';
@@ -105,9 +113,6 @@ export class GameSelection {
     this.joinGameCode = '';
   }
 
-  /**
-   * Copy game code to clipboard
-   */
   async copyGameCode() {
     try {
       await navigator.clipboard.writeText(this.gameCode);
@@ -124,9 +129,6 @@ export class GameSelection {
     }
   }
 
-  /**
-   * Share game code using Web Share API or fallback to clipboard
-   */
   async shareGameCode() {
     const shareData = {
       title: 'Join my Rock Paper Scissors game!',
@@ -135,12 +137,10 @@ export class GameSelection {
     };
 
     try {
-      // Check if Web Share API is supported
       if (navigator.share) {
         await navigator.share(shareData);
         this.successMessage = 'Game invitation shared successfully!';
       } else {
-        // Fallback: copy full invitation to clipboard
         const shareText = `Join my Rock Paper Scissors game! Game code: ${this.gameCode} - ${this.inviteLink}`;
         await navigator.clipboard.writeText(shareText);
         this.successMessage = 'Game invitation copied to clipboard!';
@@ -157,14 +157,10 @@ export class GameSelection {
     }
   }
 
-  /**
-   * Fallback method for copying text to clipboard
-   */
   private fallbackCopyTextToClipboard(text: string) {
     const textArea = document.createElement('textarea');
     textArea.value = text;
     
-    // Avoid scrolling to bottom
     textArea.style.top = '0';
     textArea.style.left = '0';
     textArea.style.position = 'fixed';

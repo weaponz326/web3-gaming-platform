@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Web3Service } from '../../../services/web3/web3';
 import { ethers, Subscription } from 'ethers';
-import rpsAbi from '../../../abis/rps.abis.json';
+import rpsAbiJson from '../../../abis/rps.abis.json'; // Import the full JSON
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { interval } from 'rxjs';
   styleUrl: './rock-paper-scissors.scss'
 })
 export class RockPaperScissors {
- gameCode: string = '';
+  gameCode: string = '';
   player1Address: string = '';
   player2Address: string | null = null;
   totalWager: number = 0;
@@ -29,24 +29,24 @@ export class RockPaperScissors {
   countdown: number = 30;
   timerSubscription: Subscription | any;
   error: string = '';
-  account: string | null = null; // Added account property
+  account: string | null = null;
   contractAddress = '0xYourContractAddress'; // Replace with actual Sepolia contract address
+  // Extract only the ABI array
+  private rpsAbi = rpsAbiJson.abi;
 
   constructor(
     private web3Service: Web3Service,
     private route: ActivatedRoute,
-    private router: Router // Added Router for navigation
+    private router: Router
   ) {}
 
   ngOnInit() {
-    // Subscribe to account changes
     this.web3Service.account$.subscribe((account) => {
       this.account = account;
       this.account = '1';
-      this.fetchGameState(); // Refresh game state when account changes
+      this.fetchGameState();
     });
 
-    // Get query params
     this.route.queryParams.subscribe((params) => {
       this.gameCode = params['gameCode'] || '';
       this.player1Address = params['player1'] || '';
@@ -64,12 +64,13 @@ export class RockPaperScissors {
   }
 
   async fetchGameState() {
-    if (!this.account) return; // Wait for account to be set
+    if (!this.account) return;
 
     const signer = this.web3Service.getSigner();
     if (!signer) return;
 
-    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
       const game = await contract['games'](this.gameCode);
       this.totalWager = Number(ethers.formatEther(game.totalWager));
@@ -113,7 +114,8 @@ export class RockPaperScissors {
       return;
     }
 
-    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
       const tx = await contract['proposeWager'](this.gameCode, ethers.parseEther(this.wagerPerGame.toString()));
       await tx.wait();
@@ -137,7 +139,8 @@ export class RockPaperScissors {
       return;
     }
 
-    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     const moveHash = ethers.keccak256(ethers.concat([ethers.toUtf8Bytes(this.move), ethers.toUtf8Bytes(this.salt)]));
     try {
       const tx = await contract['commitMove'](this.gameCode, moveHash);
@@ -157,9 +160,14 @@ export class RockPaperScissors {
       return;
     }
 
-    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
-      const tx = await contract['revealMove'](this.gameCode, Number(this.move), ethers.toUtf8Bytes(this.salt));
+      const moveNumber = parseInt(this.move);
+      if (isNaN(moveNumber) || moveNumber < 1 || moveNumber > 3) {
+        this.error = 'Invalid move';
+        return;
+      }
+      const tx = await contract['revealMove'](this.gameCode, moveNumber, ethers.toUtf8Bytes(this.salt));
       await tx.wait();
       await this.fetchGameState();
       this.error = '';
@@ -176,21 +184,27 @@ export class RockPaperScissors {
       return;
     }
 
-    const contract = new ethers.Contract(this.contractAddress, rpsAbi, signer);
+    // Use the extracted ABI
+    const contract = new ethers.Contract(this.contractAddress, this.rpsAbi, signer);
     try {
       const tx = await contract['quitGame'](this.gameCode);
       await tx.wait();
       this.gameState = 'ended';
       this.roundResult = 'Game ended!';
       this.error = '';
-      this.router.navigate(['']); // Navigate back to game selection
+      this.router.navigate(['']);
     } catch (error: any) {
       this.error = 'Failed to quit game: ' + error.message;
     }
   }
 
   selectMove(move: string) {
-    this.move = move;
+    const moveMap: { [key: string]: number } = {
+      'rock': 1,
+      'paper': 2,
+      'scissors': 3
+    };
+    this.move = moveMap[move.toLowerCase()].toString();
     this.error = '';
   }
 
